@@ -19,10 +19,26 @@ command       /usr/bin/find
 
 ```bash
 npm install
+```
+
+There are two ways to run it:
+
+**Option 1 — without a build step (dev mode)**
+
+```bash
 npm run dev -- "*/15 0 1,15 * 1-5 /usr/bin/find"
 ```
 
-That's it. No config needed.
+The `--` is required here so npm passes the argument through to the script rather than treating it as an npm flag.
+
+**Option 2 — build first, then run with node directly**
+
+```bash
+npm run build
+node dist/index.js "*/15 0 1,15 * 1-5 /usr/bin/find"
+```
+
+No `--` needed here since you're calling node directly.
 
 ---
 
@@ -36,15 +52,6 @@ Coverage report:
 
 ```bash
 npm run test:coverage
-```
-
----
-
-## Building for production
-
-```bash
-npm run build
-node dist/index.js "*/15 0 1,15 * 1-5 /usr/bin/find"
 ```
 
 ---
@@ -73,7 +80,6 @@ Field ranges:
 | month        | 1–12  |
 | day of week  | 0–6   |
 
-Special strings like `@yearly` or `@reboot` are not supported.
 
 ---
 
@@ -89,21 +95,21 @@ Special strings like `@yearly` or `@reboot` are not supported.
 ```
 src/
   index.ts              entry point, reads CLI arg and prints output
-  CronParser.ts         splits the expression into fields + command
-  CronFormatter.ts      formats the parsed result into the table
+  parser.ts             splits the expression into fields + command
+  formatter.ts          formats the result into the table
   types/
     FieldDefinition.ts  field names and their valid ranges
     FieldParser.ts      interface that every parser implements
   fields/
-    CronFieldParser.ts  figures out which parser to use for a given token
+    resolver.ts         figures out which parser to use for a given token
     parsers/
-      WildcardParser.ts
-      StepParser.ts
-      RangeParser.ts
-      ListParser.ts
-      ValueParser.ts
+      wildcard.ts
+      step.ts
+      range.ts
+      list.ts
+      value.ts
   utils/
     range.ts            simple inclusive range helper
 ```
 
-Each parser handles exactly one syntax form and nothing else. `CronFieldParser` just asks each one `canHandle()` in order and delegates to the first one that says yes. `ListParser` is the only interesting one — it splits on commas and calls back into `CronFieldParser` for each segment, so mixed lists like `1,5-7,*/10` work automatically.
+Each parser handles exactly one syntax form and nothing else. `resolver.ts` just asks each one `canHandle()` in order and delegates to the first one that says yes. `list.ts` is the only interesting one — it splits on commas and calls back into the resolver for each segment, so mixed lists like `1,5-7,*/10` work automatically.
